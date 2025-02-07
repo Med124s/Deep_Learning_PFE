@@ -13,6 +13,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.initializers import HeNormal
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.layers import Input
 
 # 1. Chargement et exploration du dataset
 url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
@@ -39,8 +40,9 @@ print(df.isnull().sum())
 
 # 2. Nettoyage des données
 # Remplacer les valeurs manquantes par la médiane (pour les colonnes numériques)
-df['ca'].fillna(df['ca'].median(), inplace=True)
-df['thal'].fillna(df['thal'].median(), inplace=True)
+
+df.loc[:, 'ca'] = df['ca'].fillna(df['ca'].median())
+df.loc[:, 'thal'] = df['thal'].fillna(df['thal'].median())
 
 # Encodage des variables catégorielles (si nécessaire)
 df = pd.get_dummies(df, columns=['cp', 'restecg', 'slope', 'ca', 'thal'], drop_first=True)
@@ -61,9 +63,10 @@ X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.33, 
 print(f"\nDimensions des ensembles :")
 print(f"Train: {X_train.shape}, Val: {X_val.shape}, Test: {X_test.shape}")
 
-# 5. Construction du modèle ANN avec Batch Normalization et régularisation L2
+
 model = Sequential([
-    Dense(64, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), input_shape=(X_train.shape[1],)),
+    Input(shape=(X_train.shape[1],)),  # Utiliser Input() pour la forme d'entrée
+    Dense(64, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)),
     BatchNormalization(),
     Dropout(0.2),
     Dense(32, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)),
@@ -73,7 +76,6 @@ model = Sequential([
     BatchNormalization(),
     Dense(1, activation='sigmoid')  # Couche de sortie (classification binaire)
 ])
-
 # Compilation du modèle avec Adam et learning rate personnalisé
 optimizer = Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
